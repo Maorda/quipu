@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "Librería agnóstica de orquestación en memoria para ingesta legal y transporte de datos"
 readme = "README.md"
 requires-python = ">=3.10"
-license = { text = "MIT" }
+license = "MIT"
 dependencies = [
     "pydantic>=2.0.0",
     "google-api-python-client>=2.0.0",
