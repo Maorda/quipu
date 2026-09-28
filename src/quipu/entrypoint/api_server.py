@@ -38,8 +38,16 @@ def _get_auth_token() -> str:
 
 
 def _get_data_dir() -> Path:
-    """Obtiene el directorio de almacenamiento estándar basado en la variable de entorno DATA_DIR."""
-    return Path(os.environ.get("DATA_DIR", "./data"))
+    """Escanea inteligentemente las carpetas hacia arriba hasta encontrar 'data'."""
+    current_dir = Path(__file__).resolve()
+    
+    # Subir nivel por nivel buscando la carpeta data/01_raw
+    for parent in current_dir.parents:
+        if (parent / "data" / "01_raw").exists():
+            return parent / "data"
+            
+    # Fallback por defecto a la raíz
+    return Path.cwd() / "data"
 
 
 def _sanitize_id(global_id: str) -> str:
@@ -49,22 +57,28 @@ def _sanitize_id(global_id: str) -> str:
 
 
 def _build_file_paths(global_id: str) -> Dict[str, str]:
-    """
-    Escanea la carpeta '01_raw' buscando archivos que contengan el global_id.
-    Retorna un diccionario dinámico: {"remaju": "ruta/...", "sunarp": "ruta/..."}
-    """
+    """Escanea la carpeta 01_raw e imprime diagnósticos en la consola."""
     clean_id = _sanitize_id(global_id)
     data_dir = _get_data_dir()
     raw_dir = data_dir / "01_raw"
     
+    # === LOGS DE DIAGNÓSTICO EN LA CONSOLA NEGRA ===
+    print(f"\n[DEBUG] 🔍 Buscando expediente: '{clean_id}'")
+    print(f"[DEBUG] 📁 Escaneando la ruta exacta: {raw_dir}")
+    
     sources_paths = {}
     if raw_dir.exists():
         for file_path in raw_dir.iterdir():
-            if file_path.is_file() and clean_id.lower() in file_path.name.lower():
-                # Extraer la fuente del nombre del archivo (ej: "remaju_exp123.pdf" -> "remaju")
-                source_key = file_path.stem.split("_")[0].lower()
-                sources_paths[source_key] = str(file_path)
-                
+            if file_path.is_file():
+                print(f"  --> Archivo detectado en carpeta: {file_path.name}")
+                if clean_id.lower() in file_path.name.lower():
+                    source_key = file_path.stem.split("_")[0].lower()
+                    sources_paths[source_key] = str(file_path)
+                    print(f"  ✅ ¡COINCIDENCIA ENCONTRADA! Asignado a: {source_key}")
+    else:
+        print(f"[DEBUG] ❌ ERROR: ¡La ruta {raw_dir} NO EXISTE o Python no tiene permisos!")
+        
+    print("\n")
     return sources_paths
 
 

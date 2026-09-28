@@ -14,11 +14,7 @@ _MAX_ATTEMPTS: Final[int] = 3
 
 
 class NestJSClient:
-    """Cliente HTTP asíncrono y agnóstico para la sincronización con backends.
-
-    Implementa políticas de reintento con backoff exponencial y soporta cualquier
-    DTO basado en Pydantic o diccionarios nativos.
-    """
+    """Cliente HTTP asíncrono y agnóstico para la sincronización con backends."""
 
     def __init__(self, settings: QuipuSettings) -> None:
         self.settings = settings
@@ -26,21 +22,20 @@ class NestJSClient:
     async def send_payload(
         self,
         payload_data: Union[BaseModel, Dict[str, Any]],
-        endpoint_path: str,  # Obligatorio: el plugin DEBE inyectar su propia ruta
+        endpoint_path: str,
     ) -> bool:
         """Envía datos mediante POST asíncrono a un endpoint inyectado por el plugin."""
         base_url = self.settings.NESTJS_API_URL.rstrip("/")
         clean_path = endpoint_path.lstrip("/")
         endpoint = f"{base_url}/{clean_path}" if clean_path else base_url
 
-        # Resolución polimórfica del payload (agnóstica al DTO del plugin)
+        # 🎯 FIX CRÍTICO: Se añade by_alias=True para preservar los nombres camelCase hacia NestJS
         if isinstance(payload_data, BaseModel):
-            # model_dump(mode="json") garantiza que fechas, URLs y UUIDs sean serializables
-            payload = payload_data.model_dump(mode="json")
+            payload = payload_data.model_dump(mode="json", by_alias=True)
         else:
             payload = payload_data
 
-        exp_id = payload.get("id_expediente_global", "UNKNOWN")
+        exp_id = payload.get("remate", {}).get("expediente", "UNKNOWN")
 
         async with httpx.AsyncClient(timeout=30.0) as client:
             for intento in range(_MAX_ATTEMPTS):
@@ -66,9 +61,10 @@ class NestJSClient:
                         )
 
                     logger.error(
-                        "Error no recuperable (HTTP %s) al transmitir el ID %s. Abortando.",
+                        "Error no recuperable (HTTP %s) al transmitir el ID %s. Respuesta: %s",
                         response.status_code,
                         exp_id,
+                        response.text,
                     )
                     return False
 
