@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tukuyrikuq"  # <-- Mantenemos tu nombre oficial de PyPI intacto
-version = "0.1.1"
+version = "0.1.2"
 description = "Librería agnóstica de orquestación en memoria para ingesta legal y transporte de datos"
 readme = "README.md"
 requires-python = ">=3.10"
