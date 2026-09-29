@@ -1,6 +1,7 @@
 # src/quipu/dispatchers/nestjs_client.py
 
 import asyncio
+import json  # 🎯 HABILITADO: Módulo para serializar y formatear el JSON por consola
 import logging
 from typing import Any, Dict, Final, Union
 
@@ -36,6 +37,21 @@ class NestJSClient:
             payload = payload_data
 
         exp_id = payload.get("remate", {}).get("expediente", "UNKNOWN")
+
+        # ==============================================================================
+        # 🔍 AUDITORÍA DE DATOS EMITIDOS (PRE-DISPATCH NESTJS)
+        # ==============================================================================
+        try:
+            json_legible = json.dumps(payload, ensure_ascii=False, indent=2)
+            print(f"\n=======================================================================")
+            print(f"📡 [QUIPU-OUTBOUND] JSON CONTRATO DESTINO HACIA NESTJS")
+            print(f"📌 URL DESTINO : {endpoint}")
+            print(f"📌 EXPEDIENTE   : {exp_id}")
+            print(f"=======================================================================")
+            print(json_legible)
+            print(f"=======================================================================\n")
+        except Exception as exc:
+            logger.warning("[NESTJS-CLIENT] No se pudo formatear el payload para la consola: %s", exc)
 
         async with httpx.AsyncClient(timeout=30.0) as client:
             for intento in range(_MAX_ATTEMPTS):
